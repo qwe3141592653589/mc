@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MtopCenter Minecraft 服务器</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            height: 100%;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            overflow: hidden;
+            touch-action: none;
+        }
+        .scroll-container {
+            height: 300vh;
+            width: 100%;
+            overflow: hidden;
+            position: relative;
+            transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            will-change: transform;
+        }
+        .section {
+            height: 100vh;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            background-color: #1a1a1a;
+            position: relative;
+            flex-shrink: 0;
+        }
+        .section .card {
+            background-color: #2b2b2b;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            max-height: 90vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        @media (min-width: 768px) {
+            .section .card {
+                width: 45vw;
+                max-width: 800px;
+            }
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #3d3d3d;
+            padding-bottom: 12px;
+        }
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #4ade80;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #3d3d3d;
+        }
+        .data-row:last-child {
+            border-bottom: none;
+        }
+        .label {
+            color: #a3a3a3;
+            font-size: 0.95rem;
+        }
+        .value {
+            color: #ffffff;
+            font-weight: 500;
+            text-align: right;
+        }
+        .status-green { color: #4ade80; }
+        .status-yellow { color: #facc15; }
+        .status-red { color: #ef4444; }
+        .sub-section-title {
+            color: #a3a3a3;
+            font-size: 0.9rem;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        .channel-list {
+            background-color: #222222;
+            border-radius: 12px;
+            padding: 10px;
+        }
+        .channel-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #333;
+        }
+        .channel-item:last-child {
+            border-bottom: none;
+        }
+        .address-scroll {
+            flex: 1;
+            overflow: hidden;
+            margin-right: 10px;
+        }
+        .address-scroll .channel-address {
+            display: inline-block;
+            white-space: nowrap;
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: #e5e5e5;
+            animation: scroll-address 12s linear infinite;
+        }
+        .channel-item .address-scroll .channel-address {
+            animation: scroll-address 12s linear infinite;
+        }
+        @keyframes scroll-address {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+        .channel-item:hover .address-scroll .channel-address {
+            animation-play-state: paused;
+        }
+        .tag {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-left: 8px;
+            white-space: nowrap;
+        }
+        .tag-success { background-color: rgba(74, 222, 128, 0.2); color: #4ade80; }
+        .tag-error { background-color: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        .tag-loading { background-color: rgba(128, 128, 128, 0.2); color: #888; }
+        .copy-btn {
+            background: transparent;
+            border: 1px solid #555;
+            color: #aaa;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            margin-left: 8px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .copy-btn:hover {
+            background-color: #333;
+            color: #fff;
+            border-color: #777;
+        }
+        .copy-btn:active {
+            transform: scale(0.95);
+        }
+        .mod-list, .plugin-list {
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .mod-item, .plugin-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #333;
+            font-size: 0.9rem;
+        }
+        .mod-item .mod-name,
+        .plugin-item .plugin-name {
+            color: #e5e5e5;
+        }
+        .mod-item .mod-version,
+        .plugin-item .plugin-version {
+            color: #888;
+            font-size: 0.8rem;
+        }
+        .ip-box-top {
+            background: #000;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: 1.2em;
+            color: #4CAF50;
+            border: 1px dashed #555;
+            cursor: pointer;
+            text-align: center;
+            transition: background 0.2s;
+        }
+        .ip-box-top:hover {
+            background: #111;
+        }
+        .ip-box-top .sub-hint {
+            font-size: 0.7em;
+            color: #888;
+            margin-top: 5px;
+        }
+        .ip-status {
+            font-size: 0.7em;
+            margin-left: 6px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        .scroll-hint {
+            position: absolute;
+            bottom: 30px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: #555;
+            font-size: 0.9rem;
+            animation: bounceDown 2s infinite;
+            pointer-events: auto;  /* 允许点击 */
+            cursor: pointer;       /* 鼠标手型 */
+            user-select: none;
+            z-index: 10;           /* 确保可点击 */
+        }
+        .scroll-hint:hover {
+            color: #aaa;
+        }
+        @keyframes bounceDown {
+            0%, 100% { transform: translateY(0); opacity: 0.6; }
+            50% { transform: translateY(8px); opacity: 1; }
+        }
+        .section:last-child .scroll-hint {
+            display: none;
+        }
+        #toast {
+            position: fixed;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #2b2b2b;
+            color: #e0e0e0;
+            padding: 12px 28px;
+            border-radius: 30px;
+            border: 1px solid #4ade80;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+            font-size: 1.1rem;
+            font-weight: 500;
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        #toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+            pointer-events: none;
+        }
+        #toast .checkmark {
+            color: #4ade80;
+            margin-left: 8px;
+            font-size: 1.3rem;
+        }
+        .no-mods, .no-plugins {
+            text-align: center;
+            color: #666;
+            padding: 20px 0;
+            font-style: italic;
+        }
+        @media (max-width: 600px) {
+            .section .card {
+                padding: 18px;
+            }
+            .ip-box-top {
+                font-size: 1em;
+            }
+        }
+        @media (min-width: 1200px) {
+            .section .card {
+                max-width: 700px;
+            }
+        }
+    </style>
+</head>
+<body>
+#fuck wochaov代码给我写好的啊，甜美java后端烧了老子500百万token
+<div id="toast">
+    <span id="toast-message">复制成功</span>
+    <span class="checkmark">✅</span>
+</div>
+
+<div class="scroll-container" id="scrollContainer">
+    <!-- 第一模块 -->
+    <div class="section" data-index="0">
+        <div class="card">
+            <h1 style="color: #4CAF50; margin-bottom: 5px; font-size: 1.8rem;">Minecraft 服务器</h1>
+            <p style="color: #ccc; font-size: 1.1em; margin-bottom: 5px;">欢迎来到我们的 Minecraft 世界！</p>
+            <div class="ip-box-top" onclick="copyMainIp()">
+                <div style="display:flex; justify-content:center; align-items:center; gap:6px;">
+                    <span id="main-ip-text" style="color:#888;">mtopcenter.top</span>
+                </div>
+                <div class="sub-hint">点击复制 IP</div>
+            </div>
+            <div style="display: flex; justify-content: center; align-items: center; margin-top: 10px; font-size: 0.95rem; color: #888; gap: 8px;">
+                <span id="first-page-status" style="color:#888;">● 加载中...</span>
+                <span>|</span>
+                <span>版本：<span style="color:#888;">1.21.X</span></span>
+            </div>
+        </div>
+        <div class="scroll-hint">↓ 向下滑查看服务器详细信息</div>
+    </div>
+
+    <!-- 第二模块 -->
+    <div class="section" data-index="1">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title"><span>📡</span> 运行状况</div>
+            </div>
+            <div class="data-row">
+                <span class="label">当前状态</span>
+                <span class="value" id="status-text2">--</span>
+            </div>
+            <div class="data-row">
+                <span class="label">在线人数</span>
+                <span class="value" id="online-count">--</span>
+            </div>
+            <div class="data-row">
+                <span class="label">网络延迟</span>
+                <span class="value" id="delay-value">-- ms</span>
+            </div>
+            <div class="data-row">
+                <span class="label">隧道状态</span>
+                <span class="value" id="tunnel-status">--</span>
+            </div>
+            <div class="data-row">
+                <span class="label">运行时间</span>
+                <span class="value" id="uptime-value">--</span>
+            </div>
+            <div class="sub-section-title">备用连接通道</div>
+            <div class="channel-list" id="channel-list">
+                <div class="channel-item" id="channel-frp">
+                    <div class="address-scroll">
+                        <span class="channel-address">frp-way.com:28437</span>
+                    </div>
+                    <div style="display:flex; align-items:center;">
+                        <span class="tag tag-loading" id="status-frp">加载中...</span>
+                        <button class="copy-btn" onclick="copyText('frp-way.com:28437')">复制</button>
+                    </div>
+                </div>
+                <div class="channel-item" id="channel-ip">
+                    <div class="address-scroll">
+                        <span class="channel-address">43.226.61.34:28437</span>
+                    </div>
+                    <div style="display:flex; align-items:center;">
+                        <span class="tag tag-loading" id="status-ip">加载中...</span>
+                        <button class="copy-btn" onclick="copyText('43.226.61.34:28437')">复制</button>
+                    </div>
+                </div>
+                <div class="channel-item" id="channel-nyat">
+                    <div class="address-scroll">
+                        <span class="channel-address">www.u3790314.nyat.app</span>
+                    </div>
+                    <div style="display:flex; align-items:center;">
+                        <span class="tag tag-loading" id="status-nyat">加载中...</span>
+                        <button class="copy-btn" onclick="copyText('www.u3790314.nyat.app')">复制</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="scroll-hint">↓ 继续下滑查看模组配置</div>
+    </div>
+
+    <!-- 第三模块 -->
+    <div class="section" data-index="2">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title"><span>🔧</span> 服务器配置</div>
+            </div>
+            <div class="data-row">
+                <span class="label">服务器版本</span>
+                <span class="value status-green">1.21.1</span>
+            </div>
+            <div class="data-row">
+                <span class="label">模组加载器</span>
+                <span class="value status-green">NeoForge-21.1.213</span>
+            </div>
+            <div class="data-row">
+                <span class="label">插件加载器</span>
+                <span class="value status-green">Paper 1.21.1</span>
+            </div>
+
+            <div style="margin-top: 20px; display: flex; justify-content: space-between; border-bottom: 1px solid #3d3d3d; padding-bottom: 10px;">
+                <span class="label status-green" style="font-weight:bold;">模组名称</span>
+                <span class="label status-green" style="font-weight:bold;">模组版本</span>
+            </div>
+            <div id="mod-list-container">
+                <div class="no-mods">加载中...</div>
+            </div>
+
+            <div style="margin-top: 20px; display: flex; justify-content: space-between; border-bottom: 1px solid #3d3d3d; padding-bottom: 10px;">
+                <span class="label status-green" style="font-weight:bold;">插件名称</span>
+                <span class="label status-green" style="font-weight:bold;">插件版本</span>
+            </div>
+            <div id="plugin-list-container">
+                <div class="plugin-item">
+                    <span class="plugin-name">EssentialsX</span>
+                    <span class="plugin-version">2.20.1</span>
+                </div>
+                <div class="plugin-item">
+                    <span class="plugin-name">LuckPerms</span>
+                    <span class="plugin-version">5.4.102</span>
+                </div>
+                <div class="plugin-item">
+                    <span class="plugin-name">WorldEdit</span>
+                    <span class="plugin-version">7.3.0</span>
+                </div>
+                <div class="plugin-item">
+                    <span class="plugin-name">StatusAPI</span>
+                    <span class="plugin-version">1.3.0</span>
+                </div>
+            </div>
+            <div style="height:10px;"></div>
+        </div>
+        <div class="scroll-hint"></div>
+    </div>
+</div>
+
+<script>
+    // ========== Toast ==========
+    var toast = document.getElementById('toast');
+    var toastMessage = document.getElementById('toast-message');
+    var toastTimer = null;
+    function showToast(msg) {
+        if (toastTimer) clearTimeout(toastTimer);
+        toastMessage.textContent = msg || '复制成功';
+        toast.classList.add('show');
+        toastTimer = setTimeout(function() { toast.classList.remove('show'); }, 2000);
+    }
+    function copyText(text) {
+        navigator.clipboard.writeText(text).then(function() { showToast('复制成功'); })
+        .catch(function() {
+            try {
+                var ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                showToast('复制成功');
+            } catch (e) { alert('复制失败，请手动复制'); }
+        });
+    }
+    function copyMainIp() { copyText('mtopcenter.top'); }
+
+    function updateChannelStatus(routes) {
+        var channelMap = {
+            'frp-way.com:28437': 'status-frp',
+            '43.226.61.34:28437': 'status-ip',
+            'www.u3790314.nyat.app:25565': 'status-nyat'
+        };
+        var routeMap = routes || {};
+        Object.keys(channelMap).forEach(function(key) {
+            var connected = routeMap[key] === true;
+            var statusEl = document.getElementById(channelMap[key]);
+            if (statusEl) {
+                if (connected) {
+                    statusEl.textContent = '可以连接';
+                    statusEl.className = 'tag tag-success';
+                } else {
+                    statusEl.textContent = '不可连接';
+                    statusEl.className = 'tag tag-error';
+                }
+            }
+        });
+    }
+
+    function renderMods(mods) {
+        var container = document.getElementById('mod-list-container');
+        if (!mods || mods.length === 0) {
+            container.innerHTML = '<div class="no-mods">暂无模组数据</div>';
+            return;
+        }
+        var html = '<div class="mod-list">';
+        mods.forEach(function(mod) {
+            html += '<div class="mod-item">';
+            html += '  <span class="mod-name">' + mod.name + '</span>';
+            html += '  <span class="mod-version">' + mod.version + '</span>';
+            html += '</div>';
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    function formatUptime(seconds) {
+        var h = Math.floor(seconds / 3600);
+        var m = Math.floor((seconds % 3600) / 60);
+        var s = Math.floor(seconds % 60);
+        return h + 'h ' + m + 'm ' + s + 's';
+    }
+
+    var API_URL = 'http://frp-way.com:28438/status';
+
+    function updateStatusUI(statusText, isRunning) {
+        var color = isRunning ? '#4CAF50' : '#ef4444';
+        var statusDisplay = isRunning ? '运行中' : '停止运行';
+
+        var firstStatus = document.getElementById('first-page-status');
+        firstStatus.textContent = '●' + statusDisplay;
+        firstStatus.style.color = color;
+
+        document.getElementById('main-ip-text').style.color = color;
+
+        document.getElementById('status-text').textContent = '● ' + statusDisplay;
+        document.getElementById('status-text').style.color = color;
+
+        var statusEl2 = document.getElementById('status-text2');
+        statusEl2.textContent = statusDisplay;
+        statusEl2.className = 'value ' + (isRunning ? 'status-green' : 'status-red');
+
+        var tunnelEl = document.getElementById('tunnel-status');
+        if (isRunning) {
+            tunnelEl.textContent = '正常';
+            tunnelEl.className = 'value status-green';
+        } else {
+            tunnelEl.textContent = '停止运行';
+            tunnelEl.className = 'value status-red';
+        }
+    }
+
+    function setOfflineState() {
+        updateStatusUI('停止运行', false);
+        document.getElementById('online-count').textContent = '--';
+        document.getElementById('delay-value').textContent = '-- ms';
+        document.getElementById('uptime-value').textContent = '--';
+
+        var statusFrp = document.getElementById('status-frp');
+        var statusIp = document.getElementById('status-ip');
+        var statusNyat = document.getElementById('status-nyat');
+        if (statusFrp) { statusFrp.textContent = '不可连接'; statusFrp.className = 'tag tag-error'; }
+        if (statusIp) { statusIp.textContent = '不可连接'; statusIp.className = 'tag tag-error'; }
+        if (statusNyat) { statusNyat.textContent = '不可连接'; statusNyat.className = 'tag tag-error'; }
+
+        document.getElementById('mod-list-container').innerHTML = '<div class="no-mods">无法连接服务器</div>';
+    }
+
+    var timeoutId = null;
+    var isOffline = false;
+
+    function fetchServerStatus() {
+        if (timeoutId) clearTimeout(timeoutId);
+        timeoutId = setTimeout(function() {
+            if (!isOffline) {
+                isOffline = true;
+                setOfflineState();
+            }
+        }, 3000);
+
+        fetch(API_URL)
+        .then(function(res) {
+            clearTimeout(timeoutId);
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+        })
+        .then(function(data) {
+            isOffline = false;
+            var allDown = data.allDown === true;
+            var isRunning = !allDown && data.status === '运行中';
+
+            updateStatusUI(data.status, isRunning);
+
+            document.getElementById('online-count').textContent = (data.online !== undefined && data.online !== null) ? data.online + '/' + data.max : '--';
+            document.getElementById('delay-value').textContent = data.delay || '-- ms';
+            var uptimeEl = document.getElementById('uptime-value');
+            uptimeEl.textContent = (data.uptime !== undefined) ? formatUptime(data.uptime) : '--';
+            if (data.routes && Object.keys(data.routes).length > 0) {
+                updateChannelStatus(data.routes);
+            } else {
+                var allFalse = {
+                    'frp-way.com:28437': false,
+                    '43.226.61.34:28437': false,
+                    'www.u3790314.nyat.app:25565': false
+                };
+                updateChannelStatus(allFalse);
+            }
+            if (data.mods) {
+                renderMods(data.mods);
+            } else {
+                document.getElementById('mod-list-container').innerHTML = '<div class="no-mods">暂无模组数据</div>';
+            }
+        })
+        .catch(function(err) {
+            clearTimeout(timeoutId);
+            if (!isOffline) {
+                isOffline = true;
+                setOfflineState();
+            }
+        });
+    }
+
+    fetchServerStatus();
+    setInterval(fetchServerStatus, 3000);
+
+    // ========== 全屏滚动 + 内部滚动优先 + 点击提示翻页 ==========
+    (function() {
+        var container = document.getElementById('scrollContainer');
+        var sections = document.querySelectorAll('.section');
+        var total = sections.length;
+        var currentIndex = 0;
+        var isAnimating = false;
+        var lastTime = 0;
+        var cooldown = 600;
+
+        var isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+        var touchThreshold = isMobile ? 12 : 25;
+
+        function goTo(index) {
+            if (isAnimating) return false;
+            if (index < 0 || index >= total) return false;
+            if (index === currentIndex) return false;
+            isAnimating = true;
+            currentIndex = index;
+            container.style.transform = 'translateY(-' + (index * 100) + 'vh)';
+            setTimeout(function() {
+                isAnimating = false;
+            }, 550);
+            return true;
+        }
+
+        function getScrollableParent(element) {
+            while (element && element !== document) {
+                if (element.classList && element.classList.contains('card')) {
+                    return element;
+                }
+                element = element.parentElement;
+            }
+            return null;
+        }
+
+        // ---- 滚轮事件 ----
+        container.addEventListener('wheel', function(e) {
+            var target = e.target;
+            var card = getScrollableParent(target);
+            if (card) {
+                var scrollTop = card.scrollTop;
+                var scrollHeight = card.scrollHeight;
+                var clientHeight = card.clientHeight;
+                var atTop = scrollTop === 0;
+                var atBottom = scrollTop + clientHeight >= scrollHeight - 1;
+
+                if (e.deltaY > 0 && !atBottom) {
+                    return;
+                }
+                if (e.deltaY < 0 && !atTop) {
+                    return;
+                }
+                e.preventDefault();
+                handleDirection(e.deltaY);
+                return;
+            }
+            e.preventDefault();
+            if (Math.abs(e.deltaY) > 10) {
+                handleDirection(e.deltaY);
+            }
+        }, { passive: false });
+
+        // ---- 触摸事件 ----
+        var touchStartY = 0;
+        var touchStartTime = 0;
+        var touchDelta = 0;
+        var touchCard = null;
+        var touchStartScrollTop = 0;
+
+        container.addEventListener('touchstart', function(e) {
+            touchStartY = e.touches[0].clientY;
+            touchStartTime = Date.now();
+            touchDelta = 0;
+            var target = e.target;
+            touchCard = getScrollableParent(target);
+            if (touchCard) {
+                touchStartScrollTop = touchCard.scrollTop;
+            } else {
+                touchStartScrollTop = 0;
+            }
+        }, { passive: true });
+
+        container.addEventListener('touchmove', function(e) {
+            var now = Date.now();
+            if (now - touchStartTime < 80) return;
+            var currentY = e.touches[0].clientY;
+            touchDelta = touchStartY - currentY;
+
+            if (touchCard) {
+                var card = touchCard;
+                var scrollTop = card.scrollTop;
+                var scrollHeight = card.scrollHeight;
+                var clientHeight = card.clientHeight;
+                var atTop = scrollTop === 0;
+                var atBottom = scrollTop + clientHeight >= scrollHeight - 1;
+
+                if (touchDelta > 0 && !atBottom) {
+                    return;
+                }
+                if (touchDelta < 0 && !atTop) {
+                    return;
+                }
+                e.preventDefault();
+                handleDirection(touchDelta);
+                touchStartY = currentY;
+                touchStartTime = now;
+                touchDelta = 0;
+                return;
+            }
+
+            e.preventDefault();
+            if (Math.abs(touchDelta) > touchThreshold) {
+                handleDirection(touchDelta);
+                touchStartY = currentY;
+                touchStartTime = now;
+                touchDelta = 0;
+            }
+        }, { passive: false });
+
+        // ---- 点击提示文字翻页（新增） ----
+        var hints = container.querySelectorAll('.scroll-hint');
+        hints.forEach(function(hint) {
+            hint.addEventListener('click', function(e) {
+                e.stopPropagation();
+                // 向下翻一页
+                if (currentIndex < total - 1) {
+                    goTo(currentIndex + 1);
+                }
+            });
+        });
+
+        function handleDirection(deltaY) {
+            var now = Date.now();
+            if (now - lastTime < cooldown) return;
+            if (isAnimating) return;
+            var target;
+            if (deltaY > 0) {
+                target = currentIndex + 1;
+            } else {
+                target = currentIndex - 1;
+            }
+            if (target >= 0 && target < total) {
+                lastTime = now;
+                goTo(target);
+            }
+        }
+
+        container.style.transform = 'translateY(0)';
+        window.addEventListener('resize', function() {
+            container.style.transform = 'translateY(-' + (currentIndex * 100) + 'vh)';
+        });
+    })();
+</script>
+</body>
+</html>
